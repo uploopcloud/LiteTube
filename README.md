@@ -38,7 +38,7 @@ The desktop shell uses Microsoft's Edge WebView2 runtime. Most modern Windows 10
 
 ```json
 {
-  "github_repo": "YOUR_USERNAME/LiteTube",
+  "github_repo": "uploopcloud/LiteTube",
   "release_channel": "stable",
   "check_on_start": true
 }
