@@ -41,8 +41,10 @@
 
       <section id="homeView" class="view active">
         <div class="welcome"><div><span class="eyebrow">LITETUBE • AUDIO-ONLY MUSIC</span><h1>Your music.<br><em>Nothing extra.</em></h1><p>Search music, discover something new, build playlists, and listen through a clean audio-only experience.</p><button id="homeSearchBtn" class="dark-btn">Start listening <i class="bi bi-arrow-right"></i></button></div><div class="welcome-art"><div class="vinyl"><i class="bi bi-play-fill"></i></div><div class="floating-card fc-one"><i class="bi bi-headphones"></i><b>Audio only</b><small>Data conscious</small></div><div class="floating-card fc-two"><i class="bi bi-soundwave"></i><b>64k</b><small>Quality target</small></div></div></div>
-        <div class="section-title"><div><span>DISCOVER</span><h2>Recommended for you</h2></div><button id="refreshRecommendations" class="text-btn">Refresh <i class="bi bi-arrow-clockwise"></i></button></div>
-        <div id="recommendations" class="recommend-grid"><div class="loading-card">Loading recommendations…</div></div>
+        <div class="section-title"><div><span>DISCOVER</span><h2>Artists &amp; Songs Near You</h2></div><button id="refreshArtists" class="text-btn">Refresh <i class="bi bi-arrow-clockwise"></i></button></div>
+        <div id="artistLocation" class="artist-location"><i class="bi bi-geo-alt-fill"></i><span>Detecting your location…</span></div>
+        <div id="artistGrid" class="artist-grid"><div class="loading-card"><i class="bi bi-music-note-beamed"></i> Finding artists for your location…</div></div>
+        <div id="localSongs" class="local-song-grid"></div>
         <div class="section-title"><div><span>QUICK START</span><h2>Explore by mood</h2></div></div>
         <div class="mood-grid"><button data-search="chill songs"><i class="bi bi-cloud-moon"></i>Chill</button><button data-search="sad songs"><i class="bi bi-moon-stars"></i>Late Night</button><button data-search="romantic songs"><i class="bi bi-heart"></i>Romantic</button><button data-search="workout songs"><i class="bi bi-lightning-charge"></i>Workout</button><button data-search="lofi music"><i class="bi bi-cassette"></i>Lo-Fi</button><button data-search="new music 2026"><i class="bi bi-stars"></i>New Music</button></div>
       </section>
@@ -51,7 +53,7 @@
 
       <section id="queueView" class="view"><div class="page-heading"><div><span>YOUR QUEUE</span><h2>Up next</h2></div><div class="heading-actions"><button id="queuePlayAllBtn" class="dark-btn small"><i class="bi bi-play-fill"></i> Play queue</button><button id="clearQueueBtn" class="light-btn"><i class="bi bi-trash3"></i> Clear</button></div></div><div id="queueList" class="large-track-list"></div></section>
 
-      <section id="playlistView" class="view"><div class="page-heading"><div><span>YOUR PLAYLISTS</span><h2 id="playlistPageTitle">Playlists</h2></div><button id="playlistPageNew" class="dark-btn small"><i class="bi bi-plus-lg"></i> New playlist</button></div><div id="playlistsPage" class="playlist-page"></div></section>
+      <section id="playlistView" class="view"><div class="page-heading"><div class="heading-left"><button id="playlistBackBtn" class="back-btn hidden" type="button" aria-label="Back to playlists"><i class="bi bi-arrow-left"></i></button><div><span>YOUR PLAYLISTS</span><h2 id="playlistPageTitle">Playlists</h2></div></div><button id="playlistPageNew" class="dark-btn small"><i class="bi bi-plus-lg"></i> New playlist</button></div><div id="playlistsPage" class="playlist-page"></div></section>
 
       <section id="historyView" class="view"><div class="page-heading"><div><span>LAST 50 PLAYED</span><h2>Listening history</h2></div><span class="history-pill"><i class="bi bi-clock-history"></i> <b id="historyCount">0</b>/50</span></div><div id="historyList" class="history-list"></div></section>
     </main>
@@ -73,6 +75,6 @@
     <div class="player-center"><div class="controls"><button id="shuffleBtn" class="player-icon" title="Shuffle"><i class="bi bi-shuffle"></i></button><button id="prevBtn" class="player-icon" title="Previous"><i class="bi bi-skip-start-fill"></i></button><button id="playBtn" class="player-play" title="Play/Pause"><i class="bi bi-play-fill"></i></button><button id="nextBtn" class="player-icon" title="Next"><i class="bi bi-skip-end-fill"></i></button><button id="repeatBtn" class="player-icon" title="Repeat"><i class="bi bi-repeat"></i></button></div><div class="progress-line"><span id="currentTime">0:00</span><input id="progress" type="range" min="0" max="100" value="0" step=".1"><span id="totalTime">0:00</span></div></div>
     <div class="player-right"><button id="muteBtn" class="player-icon" title="Mute"><i class="bi bi-volume-up-fill"></i></button><input id="volume" type="range" min="0" max="1" value="1" step=".01"><select id="qualitySelect"><option value="48">48k</option><option value="64" selected>64k</option><option value="96">96k</option><option value="128">128k</option></select></div>
   </div>
-  <script src="/static/app.js" defer></script>
+  <script src="/static/app.js?v=artist-location-v1-101" defer></script>
 </body>
 </html>

@@ -1,235 +1,316 @@
-# LiteTube 🎵
+# LiteTube
 
-### A lightweight Windows desktop music player powered by YouTube audio.
+### A Lightweight, Premium Music Player for Windows
 
-**LiteTube** is a fast, privacy-friendly, audio-only YouTube music player for Windows. Search for music, play it in a clean desktop window, build playlists, manage your queue, and enjoy your music without loading unnecessary video.
+LiteTube is a lightweight Windows desktop music player designed for a clean, focused music listening and discovery experience powered by YouTube's music ecosystem.
 
-No heavy streaming interface. No video playback. Just the music.
-
----
-
-## ✨ Why LiteTube?
-
-Streaming music can use a lot of data when you're loading video, thumbnails, animations, comments, and other unnecessary content.
-
-LiteTube takes a simpler approach:
-
-> **Search → Play → Listen.**
-
-LiteTube focuses on the audio experience so you can enjoy music while using less bandwidth than full video playback.
-
-### With LiteTube you can:
-
-- 🎵 Search YouTube for music
-- 🔊 Play audio without opening the YouTube website
-- 💾 Reduce unnecessary video data usage
-- 📋 Create and manage local playlists
-- ⏭️ Build and reorder your playback queue
-- 🔀 Shuffle your music
-- 🔁 Repeat tracks
-- 🕘 Keep playback history
-- 🔗 Play music from supported YouTube URLs
-- 🌙 Use Light or Dark mode
-- 🖥️ Use LiteTube as a standalone Windows application
-- 🔄 Receive notifications when a new LiteTube version is available
+It combines a modern glassmorphism interface with music discovery, smart search, playlists, queue management, playback history, and location-based music suggestions — all inside a lightweight desktop application.
 
 ---
 
-# 🖥️ A Real Windows Desktop App
+## ✨ Features
 
-LiteTube is designed to run as its own Windows application.
+### 🎵 Music Discovery
 
-You don't need to keep a browser tab open just to use the player.
+- Location-based music discovery
+- Detects approximate user location using public IP
+- Suggests artists based on location
+- Suggests songs based on location
+- Music-focused recommendations
+- Music filtering to reduce non-music content
+- No YouTube Data API key required
+- No YouTube Home recommendation scraping
+- No browser window required for normal operation
 
-After building the application:
+---
+
+### 🔎 Smart Music Search
+
+Search YouTube for:
+
+- Songs
+- Artists
+- Albums
+- Music videos
+- Other music-related content
+
+Search results use the same music-focused filtering system to reduce unwanted non-music results.
+
+Search suggestions are provided while typing.
+
+Playing a search result does **not** automatically add every search result to the queue.
+
+---
+
+## ▶️ Music Player
+
+LiteTube includes a dedicated audio-focused player with:
+
+- Play
+- Pause
+- Previous
+- Next
+- Seek
+- Progress tracking
+- Volume control
+- Current track information
+- Automatic playback continuation
+- Queue-aware playback
+
+When a queue exists, queued tracks take priority.
+
+When the queue is empty, LiteTube can continue playback through available music suggestions.
+
+---
+
+## 📋 Queue
+
+The queue system supports:
+
+- Add songs to queue
+- Remove songs from queue
+- Drag-and-drop reordering
+- Magnetic reordering
+- Visual drag placeholder
+- Queue priority during playback
+- Automatic removal of completed queue tracks
+
+Songs can be moved directly to another position using drag-and-drop.
+
+For example:
 
 ```text
-LiteTube.exe
+Song 1
+Song 2
+Song 3
+Song 4
+Song 5
+Song 6
 ```
 
-opens LiteTube inside its own resizable Windows window.
+Song 6 can be dragged directly to position 3:
 
-The desktop shell uses WebView2/pywebview while Flask runs locally as the application backend.
+```text
+Song 1
+Song 2
+Song 6
+Song 3
+Song 4
+Song 5
+```
 
----
-
-# 🎧 Audio-Only Music Experience
-
-LiteTube is designed around listening rather than watching.
-
-Instead of loading a complete video experience, LiteTube focuses on the audio stream.
-
-This can help reduce unnecessary bandwidth usage, especially when you are listening for long periods.
-
-### Why audio-only?
-
-When you're listening to music, you may not need:
-
-- Video playback
-- Large video frames
-- YouTube's full website interface
-- Comments
-- Recommended video feeds
-- Unnecessary page elements
-
-LiteTube keeps the experience focused on the thing that matters:
-
-**Your music.**
-
-> Actual data usage depends on the selected audio format, source, network conditions, and YouTube content.
+No up/down buttons are required.
 
 ---
 
-# 💰 Save Your Data
+# 💿 Playlists
 
-If you're listening to music rather than watching videos, downloading and processing video is often unnecessary.
+LiteTube includes persistent playlists with a dedicated playlist interface.
 
-LiteTube is built to keep playback focused on audio.
+### Playlist Navigation
 
-That means LiteTube can be useful when:
+The playlist system follows a simple two-level structure:
 
-- You have limited bandwidth
-- You're using mobile hotspot data
-- You want a lightweight music player
-- You don't need video while listening
-- You want to keep your music library and queue locally
+```text
+Playlists
+   ↓
+Playlist List
+   ↓
+Select Playlist
+   ↓
+Playlist Details
+   ↓
+Songs
+```
 
----
+Opening the main **Playlists** section shows the playlist list first.
 
-# 🎶 Do I Need Spotify Premium?
+A playlist's songs are only displayed after selecting that specific playlist.
 
-LiteTube does **not require a Spotify subscription** to use LiteTube.
-
-LiteTube is a separate Windows music player that uses supported YouTube audio sources.
-
-You can search for music and listen through LiteTube without paying for a LiteTube subscription.
-
-### Important
-
-LiteTube does not provide or sell music licenses.
-
-You are responsible for using content that you are legally authorized to access and play in your region.
-
----
-
-# 🚫 No Extra Ads From LiteTube
-
-LiteTube does not add its own advertising layer to the player interface.
-
-There are no LiteTube banner ads, pop-up advertisements, or sponsored playlists built into the application.
-
-However, LiteTube does not control the availability, advertising, licensing, or policies of third-party content sources.
-
----
-
-# 📋 Playlists
-
-Create local playlists to organize your music.
-
-You can:
+### Playlist Features
 
 - Create playlists
-- Add songs
+- Persistent playlists
+- Playlist data survives application restart
+- Open individual playlists
+- Play All
+- Play individual songs
 - Remove songs
-- Play individual tracks
-- Play an entire playlist
-- Start playback from a specific song
-- Reorder playlist tracks
+- Drag-and-drop song reordering
+- Dedicated playlist detail view
+- Back navigation to playlist list
 
-Your playlists are stored locally for your LiteTube app origin.
+The original playlist order is preserved.
 
----
-
-# ⏭️ Smart Queue
-
-LiteTube includes a flexible playback queue.
-
-You can:
-
-- Add tracks to the queue
-- Remove tracks
-- Drag and reorder tracks
-- Start playback from any queued song
-- Shuffle playback
-- Use repeat controls
-- Continue with recommendations when the queue is empty
-
-The queue is designed to make LiteTube feel like a dedicated music player rather than a simple YouTube search page.
+Playback can start from any selected song while continuing through the remaining playlist tracks in the correct order.
 
 ---
 
 # 🕘 Playback History
 
-LiteTube keeps recent playback history locally so you can move back through recently played tracks.
+LiteTube maintains recent playback history.
 
-History helps with:
+Features include:
 
-- Previous track navigation
-- Finding recently played music
-- Returning to songs you listened to earlier
+- Recently played tracks
+- Up to the latest 50 played songs
+- Previous-track navigation
+- History-aware playback
+- Avoiding unnecessary duplicate history entries
 
----
-
-# 🌙 Light & Dark Mode
-
-LiteTube includes a modern glass-style interface with Light and Dark themes.
-
-The interface is designed to remain clean and comfortable during long listening sessions.
+History is stored locally.
 
 ---
 
-# 🔄 Automatic Updates
+# 🌍 Location-Based Music Discovery
 
-LiteTube can check the project's GitHub Releases for newer versions.
+LiteTube uses approximate public-IP-based location information to provide more relevant music discovery.
 
-When a new version is published, the application can notify the user and provide a link to the latest release.
-
-Example:
+For example:
 
 ```text
-v1.0.0
-   ↓
-v1.1.0
-   ↓
-LiteTube detects the new release
-   ↓
-User receives an update notification
+User Location
+      ↓
+Approximate Country / Region
+      ↓
+Relevant Music Search
+      ↓
+Music Filter
+      ↓
+Artists + Songs
 ```
 
-Updates are distributed through GitHub Releases.
+The location is used only to improve music discovery relevance.
+
+LiteTube does not require users to manually enter their location.
 
 ---
 
-# 🛠️ Build LiteTube for Windows
+# 🎨 Premium Glass Interface
+
+LiteTube uses a modern glass-inspired interface designed for desktop music listening.
+
+### Interface Features
+
+- Glassmorphism design
+- Transparent glass panels
+- Light mode
+- Dark mode
+- Modern cards
+- Rounded UI elements
+- Smooth interactions
+- Responsive layout
+- Desktop-focused interface
+- Music-focused visual hierarchy
+
+The interface is intentionally lightweight while maintaining a premium appearance.
+
+---
+
+# 🖥️ Windows Desktop Application
+
+LiteTube runs as a desktop application rather than requiring users to operate it through a normal browser tab.
+
+The desktop application uses:
+
+- Python
+- Flask
+- pywebview
+- yt-dlp
+- HTML
+- CSS
+- JavaScript
+
+Architecture:
+
+```text
+Windows Desktop App
+        │
+        ▼
+    pywebview
+        │
+        ▼
+   Local Flask Server
+        │
+        ├── Music Search
+        ├── Music Discovery
+        ├── Playlists
+        ├── Queue
+        ├── History
+        └── Audio Extraction
+                │
+                ▼
+              yt-dlp
+                │
+                ▼
+             YouTube
+```
+
+---
+
+# 📦 Installation
 
 ## Requirements
 
-- Windows 10 or Windows 11
+LiteTube is designed for:
+
+- Windows 10
+- Windows 11
 - Python 3.10 or newer
 - Internet connection
-- Microsoft Edge WebView2 Runtime
-
-Python must be available through the `python` command.
 
 ---
 
-## 1. Install Python
+## 🚀 Quick Start
 
-Install Python 3.10+ and enable:
+### 1. Download LiteTube
+
+Download or clone this repository.
+
+### 2. Open the LiteTube folder
+
+Make sure the following files are present:
 
 ```text
-Add Python to PATH
+desktop.py
+server.py
+requirements.txt
+run.bat
 ```
 
-Verify:
+### 3. Run LiteTube
 
-```bat
-python --version
+Double-click:
+
+```text
+run.bat
+```
+
+The application will start automatically.
+
+---
+
+# 🛠️ Manual Installation
+
+If you want to install the project manually:
+
+### Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Start LiteTube
+
+```bash
+python desktop.py
 ```
 
 ---
 
-## 2. Build the Windows application
+# 🏗️ Build the Windows Application
+
+LiteTube includes a Windows build script.
 
 Run:
 
@@ -237,195 +318,196 @@ Run:
 build_windows_desktop.bat
 ```
 
-The build script creates the required virtual environment, installs dependencies, and builds the Windows executable.
-
-After the build completes:
-
-```text
-LiteTube.exe
-```
-
-will be created.
+The script can be used to create the Windows desktop build.
 
 ---
 
-## 3. Launch LiteTube
-
-Double-click:
+# 📁 Project Structure
 
 ```text
-LiteTube.exe
-```
-
-LiteTube should open as a standalone Windows application.
-
-The main interface does not need Chrome or Edge.
-
----
-
-# 🌐 Development Version
-
-Developers can also run the Flask source version.
-
-Run:
-
-```text
-run.bat
-```
-
-The development version opens the local LiteTube web interface in your browser.
-
-This mode is intended for development and testing.
-
-For normal Windows users, use:
-
-```text
-LiteTube.exe
+LiteTube/
+│
+├── desktop.py
+├── server.py
+├── requirements.txt
+├── LiteTube.ico
+├── update_config.json
+├── run.bat
+├── build_windows_desktop.bat
+├── README.md
+├── VERSION.txt
+│
+└── static/
+    ├── index.html
+    ├── style.css
+    └── app.js
 ```
 
 ---
 
-# 🌍 WebView2 Requirement
+# ⚙️ Configuration
 
-The desktop application uses Microsoft's Edge WebView2 runtime.
-
-Most modern Windows 10 and Windows 11 installations already include WebView2.
-
-If LiteTube reports that WebView2 is missing, install the official Microsoft WebView2 Runtime and run the build again.
-
----
-
-# 🔄 GitHub Release System
-
-LiteTube uses GitHub Releases for version distribution.
-
-The repository is configured through:
+LiteTube uses:
 
 ```text
 update_config.json
 ```
 
-Example:
+for application update configuration.
 
-```json
-{
-  "github_repo": "uploopcloud/LiteTube",
-  "release_channel": "stable",
-  "check_on_start": true
-}
-```
+The project also maintains local application data for user-specific information such as:
 
-Create releases using version tags such as:
+- Playlists
+- Queue state
+- Playback history
+- Other local application state
 
-```text
-v1.0.0
-v1.1.0
-v1.2.0
-```
-
-The application can compare its installed version with the latest GitHub release.
+User data is stored locally rather than requiring a remote database.
 
 ---
 
-# 💾 User Data & Playlists
+# 🔐 Privacy
 
-LiteTube currently stores playlists and related interface state in the local storage associated with the LiteTube app origin.
+LiteTube is designed as a lightweight local desktop application.
 
-Replacing the application executable does not intentionally delete this data.
+### LiteTube does not require:
 
-### Important
+- A YouTube Data API key
+- A LiteTube account
+- A remote database
+- A mandatory YouTube login
 
-Do not clear LiteTube's WebView/browser site storage if you want to keep locally stored playlists and settings.
+### Local Data
 
-A future installer version may move persistent user data to:
+User-specific application data such as playlists and playback history is stored locally.
 
-```text
-%APPDATA%\LiteTube
-```
+### Location
 
-for stronger upgrade and migration safety.
+Location-based discovery uses approximate public-IP-based location information to make music suggestions more relevant.
 
----
-
-# 🔒 Privacy
-
-LiteTube is designed as a lightweight local application.
-
-The LiteTube backend runs locally on your Windows computer.
-
-LiteTube does not require a LiteTube account to create local playlists or use the player.
-
-Network requests may be made to third-party services required for search, audio extraction, playback, updates, or other application functionality.
-
-Review and follow the terms and policies of the services and content sources you use.
+LiteTube does not require precise GPS location.
 
 ---
 
-# ⚖️ Content & Copyright
+# 🌐 Network & Content
 
-LiteTube is a player/interface and does not own or distribute the music available through third-party sources.
+LiteTube uses YouTube as its music content source.
 
-Only access, download, or play content when you have the necessary rights or permission to do so.
+The application retrieves publicly available YouTube metadata and audio streams through its extraction layer.
 
-Users are responsible for complying with applicable copyright laws, YouTube's terms, and the terms of any third-party service they use.
-
----
-
-# 🚀 Roadmap
-
-Potential future improvements include:
-
-- [ ] Improved Windows installer
-- [ ] Persistent user data in `%APPDATA%\LiteTube`
-- [ ] More playback controls
-- [ ] Better playlist management
-- [ ] Improved download/data usage controls
-- [ ] Additional desktop integrations
-- [ ] More reliable automatic update workflow
-- [ ] Additional audio quality options
+LiteTube itself does not host or redistribute the underlying YouTube content.
 
 ---
 
-# 🤝 Contributing
+# ⚠️ Disclaimer
 
-Contributions, bug reports, feature ideas, and improvements are welcome.
+LiteTube is an independent third-party project.
 
-If you find a problem, open an issue with:
+LiteTube is **not affiliated with, endorsed by, sponsored by, or officially connected to YouTube or Google.**
 
-1. Windows version
-2. LiteTube version
-3. Steps to reproduce the problem
-4. Error message or screenshot
-5. Relevant logs if available
+YouTube and related trademarks belong to their respective owners.
 
----
+Content available through YouTube remains the property of its respective copyright holders.
 
-# 📜 License
+Users are responsible for complying with:
 
-See the repository license file for the applicable license and usage terms.
+- Applicable laws
+- YouTube's Terms of Service
+- Copyright requirements
+- Rights of content owners
 
----
-
-## ⭐ LiteTube
-
-**Search less. Watch less. Listen more.**
-
-A lightweight YouTube-powered audio player for Windows.
-
-🎵 **Music**
-
-🖥️ **Windows Desktop**
-
-💾 **Data-conscious playback**
-
-📋 **Local Playlists**
-
-⏭️ **Smart Queue**
-
-🌙 **Light & Dark Mode**
-
-🔄 **GitHub Updates**
+LiteTube should only be used in accordance with applicable laws and the terms governing the content being accessed.
 
 ---
 
-> LiteTube is an independent project and is not affiliated with YouTube, Google, Spotify, Microsoft, or any music label or rights holder.
+# 🧩 Technology Stack
+
+LiteTube is built using the following technologies:
+
+| Technology | Purpose |
+|---|---|
+| Python | Application backend |
+| Flask | Local web server |
+| yt-dlp | YouTube extraction |
+| pywebview | Windows desktop window |
+| HTML | Application structure |
+| CSS | Interface and visual design |
+| JavaScript | Application logic |
+
+---
+
+# 📌 Current Version
+
+## LiteTube v1.0.1
+
+### v1.0.1 Highlights
+
+- Location-based music discovery
+- Artist suggestions
+- Location-based song suggestions
+- Music-focused search filtering
+- Persistent playlists
+- Dedicated playlist navigation
+- Queue management
+- Drag-and-drop queue ordering
+- Playlist drag-and-drop ordering
+- Playback history
+- Audio-focused playback
+- Light mode
+- Dark mode
+- More transparent glass interface
+- Windows desktop application
+
+---
+
+# 🔄 Version History
+
+## v1.0.1
+
+Current stable release.
+
+### Changes
+
+- Added location-based artist discovery
+- Added location-based song discovery
+- Removed dependency on YouTube Home recommendations
+- Removed Chrome cookie dependency for recommendations
+- Improved music-focused discovery
+- Improved playlist navigation
+- Persistent playlist storage
+- Updated transparent glass interface
+
+---
+
+# 🗺️ Roadmap
+
+Possible future improvements may include:
+
+- More advanced music discovery
+- Improved artist pages
+- Better recommendation personalization
+- Additional playlist tools
+- Improved library management
+- More playback customization
+- Performance improvements
+- Additional Windows integrations
+
+---
+
+# ❤️ LiteTube
+
+LiteTube is built around one simple idea:
+
+> **Keep music listening simple.**
+
+No unnecessary complexity.
+
+Just search, discover, organize, and listen.
+
+---
+
+## 📄 License
+
+This project is provided as an independent software project.
+
+See the repository license for the applicable terms.

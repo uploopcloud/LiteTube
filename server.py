@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import threading
 import time
+from pathlib import Path
 from collections import OrderedDict
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -15,14 +17,27 @@ from flask import Flask, jsonify, request, send_from_directory
 
 APP_HOST = "127.0.0.1"
 APP_PORT = 8000
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 
 SEARCH_CACHE_TTL = 60
 SUGGEST_CACHE_TTL = 15
 META_CACHE_TTL = 180
 AUDIO_CACHE_TTL = 45
-RECOMMEND_CACHE_TTL = 300
+ARTIST_CACHE_TTL = 1800
 MAX_CACHE_ITEMS = 120
+
+APP_DATA_DIR = Path(os.environ.get("APPDATA") or (Path.home() / ".config")) / "LiteTube"
+APP_DATA_DIR.mkdir(parents=True, exist_ok=True)
+STATE_FILE = APP_DATA_DIR / "data.json"
+_STATE_LOCK = threading.RLock()
+
+NON_MUSIC_PATTERNS = (
+    "playlist", "nonstop", "non-stop", "compilation", "jukebox", "mega mix",
+    "megamiх", "mix of", "best of", "top 10", "top 20", "top 50", "top 100",
+    "greatest hits", "radio", "podcast", "reaction", "reacts to", "interview",
+    "news", "review", "explained", "tutorial", "how to", "documentary",
+    "gameplay", "walkthrough", "vlog", "live stream", "livestream",
+)
 
 QUALITY_TARGETS = {48: 48, 64: 64, 96: 96, 128: 128}
 
@@ -49,6 +64,7 @@ _caches: dict[str, OrderedDict[str, tuple[float, Any]]] = {
     "meta": OrderedDict(),
     "audio": OrderedDict(),
     "recommend": OrderedDict(),
+    "artist": OrderedDict(),
 }
 
 
@@ -210,22 +226,59 @@ def extract_info(url: str, **overrides: Any) -> dict[str, Any]:
         raise LiteTubeError(f"yt-dlp could not process this request: {exc}") from exc
 
 
+def is_music_track(track: dict[str, Any]) -> bool:
+    """Shared music-only filter used by Home recommendations and Search."""
+    title = str(track.get("title") or "").casefold()
+    artist = str(track.get("artist") or "").casefold()
+    text = f"{title} {artist}"
+
+    if any(pattern in text for pattern in NON_MUSIC_PATTERNS):
+        return False
+
+    duration = track.get("duration")
+    if duration is not None:
+        try:
+            seconds = int(duration)
+        except (TypeError, ValueError):
+            seconds = 0
+        # Very long videos are overwhelmingly mixes, podcasts, shows or compilations.
+        if seconds > 900:
+            return False
+
+    return True
+
+
+def filter_music_tracks(tracks: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for track in tracks:
+        if not is_music_track(track) or track["id"] in seen:
+            continue
+        seen.add(track["id"])
+        results.append(track)
+        if len(results) >= limit:
+            break
+    return results
+
+
 def search_youtube(query: str, limit: int = 30) -> list[dict[str, Any]]:
     cache_key = f"{query.casefold().strip()}:{limit}"
     cached = cache_get("search", cache_key)
     if cached is not None:
         return cached
 
-    info = extract_info(f"ytsearch{limit}:{query}", extract_flat=True)
-    results: list[dict[str, Any]] = []
+    # Fetch a larger pool because the shared music filter removes non-music videos.
+    info = extract_info(f"ytsearch{max(limit * 2, 60)}:{query}", extract_flat=True)
+    candidates: list[dict[str, Any]] = []
 
     for entry in info.get("entries") or []:
         if not isinstance(entry, dict):
             continue
         track = normalize_entry(entry)
         if track:
-            results.append(track)
+            candidates.append(track)
 
+    results = filter_music_tracks(candidates, limit)
     cache_put("search", cache_key, results, SEARCH_CACHE_TTL)
     return results
 
@@ -417,38 +470,124 @@ def get_suggestions(query: str) -> list[str]:
     return suggestions
 
 
+def get_public_location() -> dict[str, str]:
+    """Resolve the machine's public IP location for localized music discovery."""
+    cached = cache_get("artist", "location")
+    if cached is not None:
+        return cached
+    try:
+        response = requests.get("https://ipapi.co/json/", timeout=5, headers={"User-Agent": "LiteTube/1.0"})
+        response.raise_for_status()
+        data = response.json()
+        result = {
+            "ip": str(data.get("ip") or ""),
+            "city": str(data.get("city") or ""),
+            "region": str(data.get("region") or ""),
+            "country": str(data.get("country_name") or ""),
+            "country_code": str(data.get("country_code") or "").upper(),
+        }
+    except Exception as exc:
+        logger.warning("IP geolocation failed: %s", exc)
+        result = {"ip": "", "city": "", "region": "", "country": "", "country_code": ""}
+    cache_put("artist", "location", result, ARTIST_CACHE_TTL)
+    return result
+
+
+def get_local_artists() -> dict[str, Any]:
+    location = get_public_location()
+    country = location.get("country") or "global"
+    code = location.get("country_code") or ""
+    cache_key = f"artists:{code or country.casefold()}"
+    cached = cache_get("artist", cache_key)
+    if cached is not None:
+        return cached
+
+    if code == "IN" or country.casefold() == "india":
+        queries = [
+            "popular Indian songs 2026",
+            "new Indian songs 2026",
+            "Indian music artists 2026",
+        ]
+    else:
+        queries = [
+            f"popular {country} songs 2026",
+            f"new {country} songs 2026",
+            f"popular {country} music artists 2026",
+        ] if country != "global" else ["popular songs 2026", "new music 2026", "popular music artists 2026"]
+
+    candidates: list[dict[str, Any]] = []
+    for query in queries:
+        try:
+            candidates.extend(search_youtube(query, limit=15))
+        except LiteTubeError as exc:
+            logger.warning("Localized artist query failed for %s: %s", query, exc)
+
+    songs = filter_music_tracks(candidates, 18)
+    artists: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for track in songs:
+        artist = str(track.get("artist") or "").strip()
+        if not artist or artist.casefold() in seen:
+            continue
+        seen.add(artist.casefold())
+        artists.append({"name": artist, "track": track})
+        if len(artists) >= 12:
+            break
+
+    result = {"location": location, "artists": artists, "songs": songs}
+    cache_put("artist", cache_key, result, ARTIST_CACHE_TTL)
+    return result
+
+
 def get_recommendations() -> list[dict[str, Any]]:
     cached = cache_get("recommend", "home")
     if cached is not None:
         return cached
 
-    # Real YouTube searches, not hardcoded song data.
-    discovery_queries = [
-        "popular songs 2026",
-        "new music 2026",
-        "viral songs 2026",
-        "best chill songs",
-    ]
+    # Use YouTube's actual Home / Recommended feed. No search queries are used.
+    # yt-dlp exposes this feed through the youtube:recommended extractor.
+    try:
+        info = extract_info(
+            "https://www.youtube.com/",
+            extract_flat=True,
+            noplaylist=False,
+            playlistend=60,
+            lazy_playlist=True,
+        )
+    except LiteTubeError as exc:
+        logger.warning("YouTube Home feed failed: %s", exc)
+        return []
 
-    combined: list[dict[str, Any]] = []
-    seen: set[str] = set()
+    candidates: list[dict[str, Any]] = []
+    for entry in info.get("entries") or []:
+        if not isinstance(entry, dict):
+            continue
+        track = normalize_entry(entry)
+        if track:
+            candidates.append(track)
 
-    for query in discovery_queries:
+    results = filter_music_tracks(candidates, 20)
+    cache_put("recommend", "home", results, RECOMMEND_CACHE_TTL)
+    return results
+
+
+def load_app_state() -> dict[str, Any]:
+    with _STATE_LOCK:
         try:
-            for track in search_youtube(query, limit=8):
-                if track["id"] not in seen:
-                    seen.add(track["id"])
-                    combined.append(track)
-                if len(combined) >= 20:
-                    break
-        except LiteTubeError as exc:
-            logger.warning("Recommendation query failed: %s", exc)
+            if not STATE_FILE.exists():
+                return {"playlists": []}
+            data = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {"playlists": []}
+        except Exception as exc:
+            logger.warning("Could not read app state: %s", exc)
+            return {"playlists": []}
 
-        if len(combined) >= 20:
-            break
 
-    cache_put("recommend", "home", combined, RECOMMEND_CACHE_TTL)
-    return combined
+def save_app_state(data: dict[str, Any]) -> None:
+    with _STATE_LOCK:
+        temp_file = STATE_FILE.with_suffix(".tmp")
+        temp_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        temp_file.replace(STATE_FILE)
 
 
 @app.get("/")
@@ -513,12 +652,40 @@ def api_suggest() -> Any:
     )
 
 
+@app.get("/api/state")
+def api_state_get() -> Any:
+    return jsonify(load_app_state())
+
+
+@app.put("/api/state")
+def api_state_put() -> Any:
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Invalid state payload."}), 400
+
+    playlists = payload.get("playlists", [])
+    if not isinstance(playlists, list):
+        return jsonify({"error": "Invalid playlists payload."}), 400
+
+    save_app_state({"playlists": playlists})
+    return jsonify({"ok": True})
+
+
 @app.get("/api/playlist")
 def api_playlist() -> Any:
     try:
         return jsonify(load_playlist(request.args.get("url", "").strip()))
     except LiteTubeError as exc:
         return jsonify({"title": "", "tracks": [], "error": str(exc)}), 422
+
+
+@app.get("/api/artists")
+def api_artists() -> Any:
+    try:
+        return jsonify(get_local_artists())
+    except Exception:
+        logger.exception("Artist discovery endpoint failed")
+        return jsonify({"location": {}, "artists": [], "songs": [], "error": "Artist discovery is temporarily unavailable."}), 200
 
 
 @app.get("/api/recommendations")

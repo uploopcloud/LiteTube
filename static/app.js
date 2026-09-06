@@ -36,7 +36,7 @@
     resultTitle: $("resultTitle"), resultEyebrow: $("resultEyebrow"), searchStatus: $("searchStatus"),
     resultsList: $("resultsList"), queueList: $("queueList"), queueCount: $("queueCount"),
     playAllBtn: $("playAllBtn"), addAllQueueBtn: $("addAllQueueBtn"), queuePlayAllBtn: $("queuePlayAllBtn"),
-    clearQueueBtn: $("clearQueueBtn"), recommendations: $("recommendations"), toast: $("toast"),
+    clearQueueBtn: $("clearQueueBtn"), artistGrid: $("artistGrid"), artistLocation: $("artistLocation"), localSongs: $("localSongs"), toast: $("toast"),
     player: document.querySelector(".player"), playerThumb: $("playerThumb"), playerTitle: $("playerTitle"),
     playerArtist: $("playerArtist"), playBtn: $("playBtn"), prevBtn: $("prevBtn"), nextBtn: $("nextBtn"),
     shuffleBtn: $("shuffleBtn"), repeatBtn: $("repeatBtn"), progress: $("progress"), currentTime: $("currentTime"),
@@ -44,9 +44,9 @@
     playlistModal: $("playlistModal"), playlistNameInput: $("playlistNameInput"), playlistCreateForm: $("playlistCreateForm"),
     closePlaylistModal: $("closePlaylistModal"), picker: $("playlistPicker"), pickerList: $("playlistPickerList"),
     closePicker: $("closePicker"), pickerNewPlaylist: $("pickerNewPlaylist"), sidebarPlaylists: $("sidebarPlaylists"),
-    playlistsPage: $("playlistsPage"), playlistPageNew: $("playlistPageNew"), newPlaylistBtn: $("newPlaylistBtn"),
+    playlistsPage: $("playlistsPage"), playlistPageTitle: $("playlistPageTitle"), playlistBackBtn: $("playlistBackBtn"), playlistPageNew: $("playlistPageNew"), newPlaylistBtn: $("newPlaylistBtn"),
     topPlaylistBtn: $("topPlaylistBtn"), topQueueBtn: $("topQueueBtn"), homeSearchBtn: $("homeSearchBtn"),
-    refreshRecommendations: $("refreshRecommendations"), historyList: $("historyList"), historyCount: $("historyCount"),
+    refreshArtists: $("refreshArtists"), historyList: $("historyList"), historyCount: $("historyCount"),
     searchBackBtn: $("searchBackBtn"), themeToggle: $("themeToggle"),
     checkUpdateBtn: $("checkUpdateBtn"), updateModal: $("updateModal"), updateTitle: $("updateTitle"),
     updateMessage: $("updateMessage"), updateNowBtn: $("updateNowBtn"), updateLaterBtn: $("updateLaterBtn"), closeUpdateModal: $("closeUpdateModal"),
@@ -57,10 +57,52 @@
     catch { return fallback; }
   }
 
+  let playlistSaveTimer = null;
+
+  function persistPlaylists() {
+    clearTimeout(playlistSaveTimer);
+    playlistSaveTimer = setTimeout(async () => {
+      try {
+        await fetch("/api/state", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ playlists: state.playlists }),
+        });
+      } catch {
+        // Keep localStorage as an offline fallback.
+      }
+    }, 80);
+  }
+
   function saveState() {
     localStorage.setItem("litetube_queue", JSON.stringify(state.queue));
     localStorage.setItem("litetube_playlists", JSON.stringify(state.playlists));
     localStorage.setItem("litetube_quality", String(state.quality));
+    persistPlaylists();
+  }
+
+  async function loadPersistedPlaylists() {
+    const localPlaylists = loadJSON("litetube_playlists", []);
+    try {
+      const data = await fetchJSON("/api/state");
+      const serverPlaylists = Array.isArray(data?.playlists) ? data.playlists : [];
+      if (serverPlaylists.length) {
+        state.playlists = serverPlaylists;
+      } else if (localPlaylists.length) {
+        state.playlists = localPlaylists;
+        await fetch("/api/state", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ playlists: state.playlists }),
+        });
+      } else {
+        state.playlists = [];
+      }
+      localStorage.setItem("litetube_playlists", JSON.stringify(state.playlists));
+    } catch {
+      state.playlists = localPlaylists;
+    }
+    renderPlaylists();
   }
 
   function escapeHtml(value) {
@@ -304,6 +346,30 @@
     }
   }
 
+  async function loadArtists(force = false) {
+    el.artistGrid.innerHTML = `<div class="loading-card"><i class="bi bi-music-note-beamed"></i> Finding artists for your location…</div>`;
+    el.localSongs.innerHTML = "";
+    try {
+      const data = await fetchJSON(`/api/artists${force ? `?t=${Date.now()}` : ""}`);
+      const location = data?.location || {};
+      const place = [location.city, location.country].filter(Boolean).join(", ");
+      el.artistLocation.innerHTML = `<i class="bi bi-geo-alt-fill"></i><span>${escapeHtml(place || "Global music")}</span>`;
+      const artists = Array.isArray(data?.artists) ? data.artists : [];
+      const songs = Array.isArray(data?.songs) ? data.songs : [];
+      if (!artists.length) {
+        el.artistGrid.innerHTML = `<div class="loading-card">No local artist suggestions available right now.</div>`;
+        return;
+      }
+      el.artistGrid.innerHTML = artists.map((item, i) => `<article class="artist-card" data-index="${i}"><img loading="lazy" src="${escapeHtml(item.track?.thumbnail || "")}" alt=""><div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.track?.title || "Music artist")}</span></div><i class="bi bi-play-circle-fill"></i></article>`).join("");
+      el.artistGrid.querySelectorAll(".artist-card").forEach((card, i) => card.addEventListener("click", () => playTrack(artists[i].track)));
+      el.localSongs.innerHTML = `<div class="local-song-heading"><span>LOCAL PICKS</span><h3>Songs you may like</h3></div>` + songs.slice(0, 8).map((track, i) => `<article class="local-song" data-index="${i}"><img loading="lazy" src="${escapeHtml(track.thumbnail)}" alt=""><div><strong>${escapeHtml(track.title)}</strong><span>${escapeHtml(track.artist)}</span></div></article>`).join("");
+      el.localSongs.querySelectorAll(".local-song").forEach((card, i) => card.addEventListener("click", () => playTrack(songs[i])));
+    } catch (error) {
+      el.artistLocation.innerHTML = `<i class="bi bi-geo-alt-fill"></i><span>Global music</span>`;
+      el.artistGrid.innerHTML = `<div class="loading-card">Artist suggestions are temporarily unavailable.</div>`;
+    }
+  }
+
   async function loadRecommendations(force = false) {
     el.recommendations.innerHTML = `<div class="loading-card"><i class="bi bi-stars"></i> Finding music for you…</div>`;
     try {
@@ -408,23 +474,85 @@
     state.currentIndex = 0; saveState(); renderQueue(); playQueueIndex(0);
   }
 
-  function renderPlaylists() {
-    el.sidebarPlaylists.innerHTML = state.playlists.length ? state.playlists.map(p => `<button class="sidebar-playlist ${state.activePlaylistId === p.id ? "active" : ""}" data-id="${escapeHtml(p.id)}"><i class="bi bi-music-note-list"></i>${escapeHtml(p.name)}<span>${p.tracks.length}</span></button>`).join("") : `<div class="side-empty">No playlists yet</div>`;
-    el.sidebarPlaylists.querySelectorAll(".sidebar-playlist").forEach(btn => btn.addEventListener("click", () => showPlaylistPage(btn.dataset.id)));
-    if (!state.playlists.length) { el.playlistsPage.innerHTML = `<div class="empty"><i class="bi bi-music-note-list"></i><strong>No playlists yet</strong><span>Create one, then add songs from any search result.</span></div>`; return; }
-
-    el.playlistsPage.innerHTML = state.playlists.map(p => `<article class="playlist-card" data-pid="${escapeHtml(p.id)}"><div class="playlist-card-head"><div><span class="playlist-label">PLAYLIST</span><h3>${escapeHtml(p.name)}</h3><span>${p.tracks.length} songs</span></div><div class="playlist-actions"><button class="light-btn playlist-play" data-id="${escapeHtml(p.id)}"><i class="bi bi-play-fill"></i> Play all</button><button class="icon-btn playlist-delete" data-id="${escapeHtml(p.id)}" title="Delete playlist"><i class="bi bi-trash3"></i></button></div></div><div class="playlist-track-list" data-pid="${escapeHtml(p.id)}">${p.tracks.length ? p.tracks.map((track,i) => `<div class="playlist-track" data-index="${i}" data-id="${escapeHtml(track.id)}"><span class="track-number">${String(i+1).padStart(2,"0")}</span><button class="icon-btn playlist-drag-handle" type="button" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></button><img loading="lazy" src="${escapeHtml(track.thumbnail)}" alt=""><div><strong>${escapeHtml(track.title)}</strong><small>${escapeHtml(track.artist)}</small></div><span class="playlist-duration">${formatTime(track.duration)}</span><button class="icon-btn playlist-track-play" data-pid="${escapeHtml(p.id)}" data-index="${i}" title="Play"><i class="bi bi-play-fill"></i></button><button class="icon-btn playlist-track-remove" data-pid="${escapeHtml(p.id)}" data-index="${i}" title="Remove"><i class="bi bi-x-lg"></i></button></div>`).join("") : `<div class="playlist-empty">This playlist is empty.</div>`}</div></article>`).join("");
-
-    el.playlistsPage.querySelectorAll(".playlist-play").forEach(btn => btn.addEventListener("click", () => playPlaylist(btn.dataset.id, 0)));
-    el.playlistsPage.querySelectorAll(".playlist-delete").forEach(btn => btn.addEventListener("click", () => { state.playlists = state.playlists.filter(p => p.id !== btn.dataset.id); if (state.activePlaylistId === btn.dataset.id) state.activePlaylistId = null; saveState(); renderPlaylists(); toast("Playlist deleted"); }));
-    el.playlistsPage.querySelectorAll(".playlist-track-play").forEach(btn => btn.addEventListener("click", () => playPlaylist(btn.dataset.pid, Number(btn.dataset.index))));
-    el.playlistsPage.querySelectorAll(".playlist-track-remove").forEach(btn => btn.addEventListener("click", e => { e.stopPropagation(); removePlaylistTrack(btn.dataset.pid, Number(btn.dataset.index)); }));
-    setupPlaylistDrag();
+  function openPlaylistList() {
+    state.activePlaylistId = null;
+    renderPlaylists();
+    showView("playlist");
   }
 
-  function showPlaylistPage(id) {
-    state.activePlaylistId = id; const p = state.playlists.find(x => x.id === id);
-    el.playlistsPage.scrollTop = 0; $("playlistPageTitle").textContent = p ? p.name : "Playlists"; showView("playlist"); renderPlaylists();
+  function openPlaylistDetail(id) {
+    const p = state.playlists.find(x => x.id === id);
+    if (!p) return;
+    state.activePlaylistId = p.id;
+    showView("playlist");
+  }
+
+  function renderPlaylists() {
+    // Sidebar: playlist shortcuts only. Clicking one opens that playlist.
+    el.sidebarPlaylists.innerHTML = state.playlists.length
+      ? state.playlists.map(p => `<button class="sidebar-playlist ${state.activePlaylistId === p.id ? "active" : ""}" data-id="${escapeHtml(p.id)}" type="button"><i class="bi bi-music-note-list"></i>${escapeHtml(p.name)}<span>${p.tracks.length}</span></button>`).join("")
+      : `<div class="side-empty">No playlists yet</div>`;
+
+    el.sidebarPlaylists.onclick = (event) => {
+      const btn = event.target.closest(".sidebar-playlist");
+      if (!btn) return;
+      event.preventDefault();
+      openPlaylistDetail(btn.dataset.id);
+    };
+
+    const active = state.activePlaylistId
+      ? state.playlists.find(p => p.id === state.activePlaylistId)
+      : null;
+
+    // PLAYLIST INDEX: only names/counts. Never render tracks here.
+    if (!active) {
+      state.activePlaylistId = null;
+      el.playlistPageTitle.textContent = "Playlists";
+      el.playlistBackBtn.classList.add("hidden");
+
+      if (!state.playlists.length) {
+        el.playlistsPage.innerHTML = `<div class="empty"><i class="bi bi-music-note-list"></i><strong>No playlists yet</strong><span>Create one, then add songs from any search result.</span></div>`;
+        el.playlistsPage.onclick = null;
+        return;
+      }
+
+      el.playlistsPage.innerHTML = `<div class="playlist-index-list">${state.playlists.map(p => `<button class="playlist-index-card" type="button" data-pid="${escapeHtml(p.id)}"><span class="playlist-index-icon"><i class="bi bi-music-note-list"></i></span><span class="playlist-index-info"><strong>${escapeHtml(p.name)}</strong><small>${p.tracks.length} ${p.tracks.length === 1 ? "song" : "songs"}</small></span><i class="bi bi-chevron-right playlist-index-arrow"></i></button>`).join("")}</div>`;
+      el.playlistsPage.onclick = (event) => {
+        const btn = event.target.closest(".playlist-index-card");
+        if (!btn) return;
+        event.preventDefault();
+        openPlaylistDetail(btn.dataset.pid);
+      };
+      return;
+    }
+
+    // PLAYLIST DETAIL: exactly ONE selected playlist and its tracks.
+    el.playlistPageTitle.textContent = active.name;
+    el.playlistBackBtn.classList.remove("hidden");
+    el.playlistsPage.onclick = null;
+    el.playlistsPage.innerHTML = `<article class="playlist-card playlist-detail" data-pid="${escapeHtml(active.id)}"><div class="playlist-card-head"><div><span class="playlist-label">PLAYLIST</span><h3>${escapeHtml(active.name)}</h3><span>${active.tracks.length} songs</span></div><div class="playlist-actions"><button class="light-btn playlist-play" data-id="${escapeHtml(active.id)}"><i class="bi bi-play-fill"></i> Play all</button><button class="icon-btn playlist-delete" data-id="${escapeHtml(active.id)}" title="Delete playlist"><i class="bi bi-trash3"></i></button></div></div><div class="playlist-track-list" data-pid="${escapeHtml(active.id)}">${active.tracks.length ? active.tracks.map((track,i) => `<div class="playlist-track" data-index="${i}" data-id="${escapeHtml(track.id)}"><span class="track-number">${String(i+1).padStart(2,"0")}</span><button class="icon-btn playlist-drag-handle" type="button" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></button><img loading="lazy" src="${escapeHtml(track.thumbnail)}" alt=""><div><strong>${escapeHtml(track.title)}</strong><small>${escapeHtml(track.artist)}</small></div><span class="playlist-duration">${formatTime(track.duration)}</span><button class="icon-btn playlist-track-play" data-pid="${escapeHtml(active.id)}" data-index="${i}" title="Play"><i class="bi bi-play-fill"></i></button><button class="icon-btn playlist-track-remove" data-pid="${escapeHtml(active.id)}" data-index="${i}" title="Remove"><i class="bi bi-x-lg"></i></button></div>`).join("") : `<div class="playlist-empty">This playlist is empty.</div>`}</div></article>`;
+
+    el.playlistsPage.querySelector(".playlist-play")?.addEventListener("click", e => {
+      e.stopPropagation();
+      playPlaylist(active.id, 0);
+    });
+    el.playlistsPage.querySelector(".playlist-delete")?.addEventListener("click", e => {
+      e.stopPropagation();
+      state.playlists = state.playlists.filter(p => p.id !== active.id);
+      state.activePlaylistId = null;
+      saveState();
+      renderPlaylists();
+      toast("Playlist deleted");
+    });
+    el.playlistsPage.querySelectorAll(".playlist-track-play").forEach(btn => btn.addEventListener("click", e => {
+      e.stopPropagation();
+      playPlaylist(btn.dataset.pid, Number(btn.dataset.index));
+    }));
+    el.playlistsPage.querySelectorAll(".playlist-track-remove").forEach(btn => btn.addEventListener("click", e => {
+      e.stopPropagation();
+      removePlaylistTrack(btn.dataset.pid, Number(btn.dataset.index));
+    }));
+    setupPlaylistDrag();
   }
 
   function openPlaylistPicker(track) {
@@ -563,19 +691,20 @@
   document.addEventListener("click", e => { if (!el.searchForm.contains(e.target)) closeSuggestions(); });
   document.querySelectorAll(".nav-item").forEach(btn => btn.addEventListener("click", () => {
     const action = btn.dataset.action;
-    if (action === "playlists") return showView("playlist");
+    if (action === "playlists") return openPlaylistList();
     if (action === "recent") return showView("history");
     if (action === "liked") return toast("Liked Songs is coming next");
     showView(btn.dataset.view || "home");
   }));
   el.topQueueBtn.addEventListener("click", () => showView("queue"));
-  el.topPlaylistBtn.addEventListener("click", () => showView("playlist"));
+  el.topPlaylistBtn.addEventListener("click", openPlaylistList);
   el.newPlaylistBtn.addEventListener("click", openCreatePlaylist); el.playlistPageNew.addEventListener("click", openCreatePlaylist);
+  el.playlistBackBtn.addEventListener("click", () => openPlaylistList());
   el.homeSearchBtn.addEventListener("click", () => el.searchInput.focus());
   el.searchBackBtn?.addEventListener("click", () => showView("home"));
   el.addAllQueueBtn.addEventListener("click", addAllToQueue); el.playAllBtn.addEventListener("click", playAllResults);
   el.queuePlayAllBtn.addEventListener("click", playWholeQueue); el.clearQueueBtn.addEventListener("click", () => { state.queue = []; state.currentIndex = -1; saveState(); renderQueue(); toast("Queue cleared"); });
-  el.refreshRecommendations.addEventListener("click", () => loadRecommendations(true));
+  el.refreshArtists.addEventListener("click", () => loadArtists(true));
   document.querySelectorAll("[data-search]").forEach(btn => btn.addEventListener("click", () => { el.searchInput.value = btn.dataset.search; updateClear(); search(btn.dataset.search); }));
   el.playBtn.addEventListener("click", togglePlayPause); el.prevBtn.addEventListener("click", previousTrack); el.nextBtn.addEventListener("click", nextTrack); el.shuffleBtn.addEventListener("click", toggleShuffle); el.repeatBtn.addEventListener("click", toggleRepeat);
   el.progress.addEventListener("input", () => { if (Number.isFinite(audio.duration)) audio.currentTime = (Number(el.progress.value) / 100) * audio.duration; updateProgress(); });
@@ -597,6 +726,7 @@
   applyTheme(localStorage.getItem("litetube-theme") || "light");
   el.qualitySelect.value = String(state.quality);
   audio.volume = Number(el.volume.value); updateVolumeUI(); updateProgress();
-  renderResults(); renderQueue(); renderPlaylists(); renderHistory(); loadRecommendations();
+  renderResults(); renderQueue(); renderPlaylists(); renderHistory(); loadArtists();
+  loadPersistedPlaylists();
   setTimeout(() => checkForUpdate(false), 1800);
 })();
