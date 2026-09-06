@@ -1,0 +1,5 @@
+{
+  "github_repo": "uploopcloud/LiteTube",
+  "release_channel": "stable",
+  "check_on_start": true
+}
